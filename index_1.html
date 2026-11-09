@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Between Us – a space for long-distance couples</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f2ff;--card:#fff;--ink:#1d2147;--mute:#6b6f99;--a:#e8557a;--b:#f2a65a;--line:#e1ddf5;--r:18px}
+@media(prefers-color-scheme:dark){:root{--bg:#131735;--card:#1d2250;--ink:#f1efff;--mute:#a4a8d6;--a:#ff8fab;--b:#ffc58a;--line:#2e346b}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 "Bricolage Grotesque",system-ui,sans-serif;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+main,header,nav{max-width:760px;margin:0 auto;padding:0 16px}
+header{display:flex;justify-content:space-between;align-items:center;padding-top:18px;padding-bottom:8px}
+h1{font-size:1.25rem;margin:0}
+h2{font-size:1.1rem;margin:0 0 10px}
+.hand{font-family:Caveat,cursive;font-size:1.4rem}
+nav{display:flex;gap:6px;padding-top:6px;padding-bottom:12px;overflow-x:auto}
+nav button{flex:1;white-space:nowrap}
+button,input,select{font:inherit;color:inherit}
+button{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:8px 16px;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--b);outline-offset:2px}
+button.on,button.pri{background:var(--a);border-color:var(--a);color:#fff;font-weight:700}
+input,select{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 12px;width:100%}
+label{display:block;font-size:.9rem;color:var(--mute);margin:10px 0 4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px}
+.big{font-size:clamp(3.5rem,18vw,6.5rem);line-height:1;font-weight:700;color:var(--a);margin:0}
+.mute{color:var(--mute)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.grid img,.feed img{width:100%;border-radius:12px;display:block}
+.sky{display:flex;align-items:center;gap:10px;margin:8px 0}
+.sky span:first-child,.sky span:last-child{flex:0 0 auto;max-width:28%;overflow-wrap:anywhere}
+.sky i{flex:1;border-top:2px dashed var(--b);position:relative;height:0}
+.sky i:after{content:"♥";position:absolute;left:50%;top:-14px;color:var(--a);background:var(--card);padding:0 6px;transform:translateX(-50%)}
+canvas{width:100%;aspect-ratio:3/2;border-radius:14px;border:1px solid var(--line);touch-action:none;background:#fff;cursor:crosshair}
+.sw{width:30px;height:30px;padding:0;border-radius:50%}
+.sw.on{outline:3px solid var(--b)}
+.msg{margin-bottom:14px}
+.del{padding:2px 10px;font-size:.8rem;color:var(--mute)}
+section{display:none}section.show{display:block}
+.err{color:var(--a);min-height:1.4em}
+</style>
+</head>
+<body>
+<header><h1>Between Us</h1><button id="reset" hidden>Edit setup</button></header>
+
+<main id="setup" hidden>
+ <div class="card">
+  <h2>Set up your space</h2>
+  <p class="mute">Add the basics once. Everything stays in this browser.</p>
+  <label for="me">Your name</label><input id="me" autocomplete="given-name">
+  <label for="her">Your partner’s name</label><input id="her">
+  <label for="start">Day your relationship began</label><input id="start" type="date">
+  <label for="c1">Your city</label><input id="c1" list="l1" placeholder="Detecting your location…" autocomplete="off">
+  <p class="mute" id="det" style="margin:4px 0 0;font-size:.85rem" role="status"></p>
+  <button type="button" id="redet" style="margin-top:6px">Detect my location</button>
+  <label for="c2">Your partner’s city</label><input id="c2" list="l2" placeholder="Start typing a city and pick one" autocomplete="off">
+  <datalist id="l1"></datalist><datalist id="l2"></datalist>
+  <p class="err" id="serr" role="alert"></p>
+  <button class="pri" id="go">Start our space</button>
+ </div>
+</main>
+
+<div id="app" hidden>
+<nav aria-label="Sections">
+ <button data-t="home" class="on">Together</button><button data-t="paint">Paint</button><button data-t="photos">Photos</button><button data-t="dates">Dates</button>
+</nav>
+<main>
+<section id="home" class="show">
+ <div class="card">
+  <p class="hand mute" id="names" style="margin:0"></p>
+  <p class="big" id="days">0</p>
+  <p style="margin:4px 0 0"><b>days together</b></p>
+  <p class="mute" id="clock" style="margin:2px 0 0"></p>
+ </div>
+ <div class="card">
+  <h2>Distance between you</h2>
+  <div class="sky"><span id="n1"></span><i></i><span id="n2"></span></div>
+  <p style="margin:0"><b id="km"></b> <span class="mute" id="mi"></span></p>
+  <p class="mute" id="fly" style="margin:4px 0 0"></p>
+ </div>
+ <div class="card"><h2>Coming up</h2><div id="soon"></div></div>
+</section>
+
+<section id="paint">
+ <div class="card">
+  <h2>Paint a message</h2>
+  <canvas id="cv" width="900" height="600" aria-label="Drawing area"></canvas>
+  <div class="row" style="margin-top:10px" id="tools"></div>
+  <div class="row" style="margin-top:10px">
+   <label for="who" style="margin:0">Sending as</label><select id="who" style="width:auto"></select>
+   <button id="clear">Clear</button><button class="pri" id="send">Send painting</button>
+  </div>
+ </div>
+ <div class="feed" id="feed"></div>
+</section>
+
+<section id="photos">
+ <div class="card">
+  <h2>Share a photo</h2>
+  <input type="file" id="file" accept="image/*" multiple aria-label="Choose photos">
+  <label for="cap">Caption (optional)</label><input id="cap" maxlength="80">
+ </div>
+ <div class="grid" id="gal"></div>
+ <p class="mute" id="noph">No photos yet. Add the first one above.</p>
+</section>
+
+<section id="dates">
+ <div class="card">
+  <h2>Add an important date</h2>
+  <label for="dt">What is it?</label><input id="dt" placeholder="First video call, birthday, next visit…">
+  <label for="dd">Date</label><input id="dd" type="date">
+  <label class="row" style="color:var(--ink);margin-top:12px"><input type="checkbox" id="rep" style="width:auto"> Repeats every year</label>
+  <div style="margin-top:10px"><button class="pri" id="add">Save date</button></div>
+ </div>
+ <div class="card"><div id="dl"></div></div>
+</section>
+</main>
+</div>
+
+<script>
+const $=s=>document.querySelector(s),DAY=864e5,KEY="between-us-v1";
+let S=null;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));return true}catch(e){alert("This browser’s storage is full. Delete some photos or paintings, then try again.");return false}}
+const fmt=d=>new Date(d+"T00:00").toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"});
+function hav(a,b){const r=x=>x*Math.PI/180,dl=r(b.lat-a.lat),dn=r(b.lon-a.lon),h=Math.sin(dl/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dn/2)**2;return 12742*Math.asin(Math.sqrt(h))}
+async function geo(q){
+ const r=await fetch("https://geocoding-api.open-meteo.com/v1/search?count=1&name="+encodeURIComponent(q));
+ const j=await r.json();if(!j.results||!j.results.length)throw new Error("Couldn’t find “"+q+"”. Check the spelling or try a nearby larger city.");
+ const c=j.results[0];return{name:c.name+(c.country?", "+c.country:""),lat:c.latitude,lon:c.longitude};
+}
+const found={c1:{},c2:{}};let mine=null;
+async function search(q){
+ const r=await fetch("https://geocoding-api.open-meteo.com/v1/search?count=6&name="+encodeURIComponent(q));
+ const j=await r.json();
+ return(j.results||[]).map(c=>({name:[c.name,c.admin1,c.country].filter(Boolean).join(", "),lat:c.latitude,lon:c.longitude}));
+}
+async function pick(q,k){
+ if(k==="c1"&&mine&&q===mine.name)return mine;
+ if(found[k][q])return found[k][q];
+ return geo(q);
+}
+function suggest(k){
+ const el=$("#"+k);let t;
+ el.addEventListener("input",()=>{
+  clearTimeout(t);const q=el.value.trim();if(q.length<2)return;
+  t=setTimeout(async()=>{try{const r=await search(q);found[k]={};r.forEach(x=>found[k][x.name]=x);$("#l"+k[1]).innerHTML=r.map(x=>`<option value="${esc(x.name)}">`).join("")}catch(e){}},300);
+ });
+}
+suggest("c1");suggest("c2");
+async function detect(){
+ $("#det").textContent="Detecting your location…";
+ const rev=async(lat,lon)=>{const r=await fetch("https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=en"+(lat!=null?`&latitude=${lat}&longitude=${lon}`:""));return r.json()};
+ const set=(j,lat,lon,how)=>{
+  const nm=[j.city||j.locality,j.principalSubdivision,j.countryName].filter(Boolean).join(", ");
+  mine={name:nm||"My location",lat:lat??j.latitude,lon:lon??j.longitude};
+  $("#c1").value=mine.name;$("#det").textContent="Location found"+how+". Change it if it’s wrong.";
+ };
+ try{
+  const p=await new Promise((ok,no)=>navigator.geolocation?navigator.geolocation.getCurrentPosition(ok,no,{timeout:10000}):no());
+  set(await rev(p.coords.latitude,p.coords.longitude),p.coords.latitude,p.coords.longitude," from your device");
+ }catch(e){
+  try{set(await rev(),null,null," from your network (approximate)")}
+  catch(x){$("#det").textContent="Couldn’t detect it. Type your city instead."}
+ }
+}
+$("#redet").onclick=detect;
+function daysUntil(d,rep){
+ const t=new Date(d+"T00:00"),n=new Date();n.setHours(0,0,0,0);
+ if(!rep)return Math.round((t-n)/DAY);
+ let x=new Date(n.getFullYear(),t.getMonth(),t.getDate());if(x<n)x=new Date(n.getFullYear()+1,t.getMonth(),t.getDate());
+ return Math.round((x-n)/DAY);
+}
+function when(n){return n===0?"Today":n===1?"Tomorrow":n>1?"In "+n+" days":Math.abs(n)+" days ago"}
+
+/* setup */
+$("#go").onclick=async()=>{
+ const me=$("#me").value.trim(),her=$("#her").value.trim(),start=$("#start").value,c1=$("#c1").value.trim(),c2=$("#c2").value.trim();
+ if(!me||!her||!start||!c1||!c2){$("#serr").textContent="Fill in every field to continue.";return}
+ $("#serr").textContent="Finding your cities…";$("#go").disabled=true;
+ try{
+  const [a,b]=await Promise.all([pick(c1,"c1"),pick(c2,"c2")]);
+  S={me,her,start,a,b,dates:(S&&S.dates)||[],msgs:(S&&S.msgs)||[],photos:(S&&S.photos)||[]};
+  save();boot();
+ }catch(e){$("#serr").textContent=e.message||"Could not reach the city lookup. Check your connection and try again."}
+ $("#go").disabled=false;
+};
+$("#reset").onclick=()=>{
+ $("#app").hidden=true;$("#setup").hidden=false;$("#reset").hidden=true;
+ if(S){mine=S.a;$("#me").value=S.me;$("#her").value=S.her;$("#start").value=S.start;$("#c1").value=S.a.name;$("#c2").value=S.b.name}
+};
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+ document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));
+ document.querySelectorAll("section").forEach(s=>s.classList.toggle("show",s.id===b.dataset.t));
+});
+
+/* home */
+function tick(){
+ const n=new Date(),s=new Date(S.start+"T00:00"),ms=n-s,d=Math.floor(ms/DAY);
+ $("#days").textContent=Math.max(d,0).toLocaleString();
+ const h=Math.floor(ms/36e5)%24,m=Math.floor(ms/6e4)%60,sec=Math.floor(ms/1e3)%60;
+ $("#clock").textContent=ms>=0?`${d} days ${h}h ${m}m ${sec}s since ${fmt(S.start)}`:"Starts on "+fmt(S.start);
+}
+function home(){
+ $("#names").textContent=S.me+" & "+S.her;
+ $("#n1").textContent=S.a.name;$("#n2").textContent=S.b.name;
+ const km=hav(S.a,S.b);
+ $("#km").textContent=Math.round(km).toLocaleString()+" km";
+ $("#mi").textContent="("+Math.round(km*.6214).toLocaleString()+" miles)";
+ $("#fly").textContent=km<20?"You’re in the same area. Go say hi!":"About "+(km/800).toFixed(1)+" hours by plane, in a straight line.";
+ const all=[{t:"Our anniversary",d:S.start,rep:true},...S.dates.map(x=>({t:x.t,d:x.d,rep:x.rep}))]
+  .map(x=>({...x,n:daysUntil(x.d,x.rep)})).filter(x=>x.n>=0).sort((a,b)=>a.n-b.n).slice(0,3);
+ $("#soon").innerHTML=all.map(x=>`<p style="margin:4px 0"><b>${esc(x.t)}</b> <span class="mute">${when(x.n)}</span></p>`).join("");
+}
+
+/* painting */
+const cv=$("#cv"),cx=cv.getContext("2d");let col="#e8557a",size=6,erase=false,draw=false,dirty=false;
+const COLORS=["#e8557a","#f2a65a","#2f9e6e","#3b6fe0","#7a4bd1","#1d2147"];
+function blank(){cx.fillStyle="#fff";cx.fillRect(0,0,cv.width,cv.height);dirty=false}
+function tools(){
+ $("#tools").innerHTML=COLORS.map(c=>`<button class="sw ${!erase&&c===col?"on":""}" data-c="${c}" style="background:${c}" aria-label="Colour ${c}"></button>`).join("")
+  +`<button id="er" class="${erase?"on":""}">Eraser</button><label style="margin:0" for="sz">Brush</label><input id="sz" type="range" min="2" max="30" value="${size}" style="width:110px">`;
+ document.querySelectorAll(".sw").forEach(b=>b.onclick=()=>{col=b.dataset.c;erase=false;tools()});
+ $("#er").onclick=()=>{erase=!erase;tools()};$("#sz").oninput=e=>size=+e.target.value;
+}
+function pt(e){const r=cv.getBoundingClientRect();return[(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]}
+function stroke(e){const[x,y]=pt(e);cx.lineTo(x,y);cx.strokeStyle=erase?"#fff":col;cx.lineWidth=size*(cv.width/cv.getBoundingClientRect().width);cx.lineCap=cx.lineJoin="round";cx.stroke();cx.beginPath();cx.moveTo(x,y);dirty=true}
+cv.onpointerdown=e=>{draw=true;cv.setPointerCapture(e.pointerId);const[x,y]=pt(e);cx.beginPath();cx.moveTo(x,y);stroke(e)};
+cv.onpointermove=e=>{if(draw)stroke(e)};
+cv.onpointerup=cv.onpointercancel=()=>{draw=false;cx.beginPath()};
+$("#clear").onclick=blank;
+$("#send").onclick=()=>{
+ if(!dirty){alert("Draw something first.");return}
+ S.msgs.unshift({who:$("#who").value,img:cv.toDataURL("image/jpeg",.7),at:Date.now()});
+ if(save()){blank();feed()}else S.msgs.shift();
+};
+function feed(){
+ $("#feed").innerHTML=S.msgs.map((m,i)=>`<div class="card msg"><div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="hand">${esc(m.who)}</span><span class="mute">${new Date(m.at).toLocaleString()} <button class="del" data-i="${i}" aria-label="Delete painting">Delete</button></span></div><img src="${m.img}" alt="Painting from ${esc(m.who)}"></div>`).join("")||`<p class="mute">No paintings yet. Your first one will show up here.</p>`;
+ document.querySelectorAll("#feed .del").forEach(b=>b.onclick=()=>{S.msgs.splice(+b.dataset.i,1);save();feed()});
+}
+
+/* photos */
+function shrink(f){return new Promise((ok,no)=>{
+ const im=new Image(),u=URL.createObjectURL(f);
+ im.onload=()=>{const k=Math.min(1,800/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;c.getContext("2d").drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL("image/jpeg",.72))};
+ im.onerror=()=>no();im.src=u})}
+$("#file").onchange=async e=>{
+ for(const f of e.target.files){try{S.photos.unshift({img:await shrink(f),cap:$("#cap").value.trim(),by:$("#who").value,at:Date.now()});if(!save()){S.photos.shift();break}}catch(x){alert("Couldn’t read "+f.name+". Try a JPG or PNG.")}}
+ e.target.value="";$("#cap").value="";gal();
+};
+function gal(){
+ $("#noph").hidden=S.photos.length>0;
+ $("#gal").innerHTML=S.photos.map((p,i)=>`<figure style="margin:0" class="card"><img src="${p.img}" alt="${esc(p.cap||"Shared photo")}"><figcaption style="margin-top:8px"><span class="hand">${esc(p.cap||"")}</span><div class="mute" style="font-size:.8rem">${esc(p.by)} · ${new Date(p.at).toLocaleDateString()} <button class="del" data-i="${i}" aria-label="Delete photo">Delete</button></div></figcaption></figure>`).join("");
+ document.querySelectorAll("#gal .del").forEach(b=>b.onclick=()=>{S.photos.splice(+b.dataset.i,1);save();gal()});
+}
+
+/* dates */
+$("#add").onclick=()=>{
+ const t=$("#dt").value.trim(),d=$("#dd").value;if(!t||!d){alert("Add a name and a date.");return}
+ S.dates.push({t,d,rep:$("#rep").checked});if(save()){$("#dt").value="";$("#dd").value="";$("#rep").checked=false;dl();home()}else S.dates.pop();
+};
+function dl(){
+ const rows=S.dates.map((x,i)=>({...x,i,n:daysUntil(x.d,x.rep)})).sort((a,b)=>(a.n<0)-(b.n<0)||Math.abs(a.n)-Math.abs(b.n));
+ $("#dl").innerHTML=`<p style="margin:0 0 8px"><b>Our anniversary</b> <span class="mute">${fmt(S.start)} · ${when(daysUntil(S.start,true))}</span></p>`+
+ (rows.map(x=>`<p style="margin:8px 0"><b>${esc(x.t)}</b> <span class="mute">${fmt(x.d)}${x.rep?" · yearly":""} · ${when(x.n)}</span> <button class="del" data-i="${x.i}" aria-label="Delete ${esc(x.t)}">Delete</button></p>`).join("")||`<p class="mute">Add birthdays, visits, firsts. They’ll count down here.</p>`);
+ document.querySelectorAll("#dl .del").forEach(b=>b.onclick=()=>{S.dates.splice(+b.dataset.i,1);save();dl();home()});
+}
+
+let timer;
+function boot(){
+ if(!S||!S.start){$("#setup").hidden=false;$("#app").hidden=true;if(!mine)detect();return}
+ $("#setup").hidden=true;$("#app").hidden=false;$("#reset").hidden=false;
+ $("#who").innerHTML=`<option>${esc(S.me)}</option><option>${esc(S.her)}</option>`;
+ home();tick();clearInterval(timer);timer=setInterval(tick,1000);
+ tools();blank();feed();gal();dl();
+}
+boot();
+</script>
+</body>
+</html>
